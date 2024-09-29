@@ -14,13 +14,13 @@ const Column = ({ id, title, cards }) => {
 			<div
 				ref={setNodeRef}
 				style={{
-					width: '200px',
+					width: '160px',
 					background: 'rgba(245,247,249,1.00)',
 				}}
 			>
 				<p
 					style={{
-						padding: '5px 20px',
+						padding: '6px 12px',
 						color: '#575757',
 						textAlign: 'center',
 						fontWeight: 'bold',

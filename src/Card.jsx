@@ -26,7 +26,7 @@ const Card = ({ id, title }) => {
 			style={style}
 		>
 			<div id={id}>
-				<p>{title}</p>
+				<p style={{ margin: '4px' }}>{title}</p>
 			</div>
 		</div>
 	);
