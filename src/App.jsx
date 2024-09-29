@@ -57,6 +57,28 @@ export default function App() {
 				},
 			],
 		},
+		{
+			id: 'bayern_munich',
+			title: 'Bayern Munich',
+			cards: [
+				{
+					id: 'kahn',
+					title: 'Kahn',
+				},
+				{
+					id: 'klose',
+					title: 'Klose',
+				},
+				{
+					id: 'muller',
+					title: 'Muller',
+				},
+				{
+					id: 'kroos',
+					title: 'Kroos',
+				},
+			],
+		},
 	];
 	const [columns, setColumns] = useState(data);
 
