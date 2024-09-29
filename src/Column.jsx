@@ -22,9 +22,9 @@ const Column = ({ id, title, cards }) => {
 				<p
 					style={{
 						padding: '5px 20px',
-						textAlign: 'left',
-						fontWeight: '500',
 						color: '#575757',
+						textAlign: 'center',
+						fontWeight: 'bold',
 					}}
 				>
 					{title}

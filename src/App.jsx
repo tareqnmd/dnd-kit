@@ -168,8 +168,6 @@ export default function App() {
 		})
 	);
 	return (
-		// 今回は長くなってしまうためsensors、collisionDetectionなどに関しての説明は省きます。
-		// ひとまずは一番使われていそうなものを置いています。
 		<DndContext
 			sensors={sensors}
 			collisionDetection={closestCorners}
