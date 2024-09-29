@@ -15,6 +15,7 @@ const Card = ({ id, title }) => {
 		padding: '10px',
 		transform: CSS.Transform.toString(transform),
 		cursor: 'pointer',
+		touchAction: 'none',
 	};
 
 	return (
