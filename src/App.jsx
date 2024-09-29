@@ -178,7 +178,13 @@ export default function App() {
 		>
 			<div
 				className="App"
-				style={{ display: 'flex', flexDirection: 'row', padding: '20px' }}
+				style={{
+					display: 'flex',
+					flexDirection: 'row',
+					padding: '20px',
+					flexWrap: 'wrap',
+					gap: '20px',
+				}}
 			>
 				{columns.map((column) => (
 					<Column

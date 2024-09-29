@@ -16,7 +16,6 @@ const Column = ({ id, title, cards }) => {
 				style={{
 					width: '200px',
 					background: 'rgba(245,247,249,1.00)',
-					marginRight: '10px',
 				}}
 			>
 				<p
