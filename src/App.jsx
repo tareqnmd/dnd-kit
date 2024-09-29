@@ -14,30 +14,46 @@ import './index.css';
 export default function App() {
 	const data = [
 		{
-			id: 'Column1',
-			title: 'Column1',
+			id: 'man_united',
+			title: 'Man United',
 			cards: [
 				{
-					id: 'Card1',
-					title: 'Card1',
+					id: 'giggs',
+					title: 'Giggs',
 				},
 				{
-					id: 'Card2',
-					title: 'Card2',
+					id: 'rooney',
+					title: 'Rooney',
+				},
+				{
+					id: 'beckham',
+					title: 'Beckham',
+				},
+				{
+					id: 'scholes',
+					title: 'Scholes',
 				},
 			],
 		},
 		{
-			id: 'Column2',
-			title: 'Column2',
+			id: 'real_madrid',
+			title: 'Real Madrid',
 			cards: [
 				{
-					id: 'Card3',
-					title: 'Card3',
+					id: 'ronaldo',
+					title: 'Ronaldo',
 				},
 				{
-					id: 'Card4',
-					title: 'Card4',
+					id: 'zidane',
+					title: 'Zidane',
+				},
+				{
+					id: 'figo',
+					title: 'Figo',
+				},
+				{
+					id: 'casillas',
+					title: 'Casillas',
 				},
 			],
 		},

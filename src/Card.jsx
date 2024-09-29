@@ -14,6 +14,7 @@ const Card = ({ id, title }) => {
 		background: 'white',
 		padding: '10px',
 		transform: CSS.Transform.toString(transform),
+		cursor: 'pointer',
 	};
 
 	return (
