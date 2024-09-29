@@ -82,6 +82,8 @@ export default function App() {
 	];
 	const [columns, setColumns] = useState(data);
 
+	console.log(columns);
+
 	const findColumn = (unique) => {
 		if (!unique) {
 			return null;
