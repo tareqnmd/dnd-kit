@@ -2,7 +2,7 @@
   --focused-outline-color: #4c9ffe;
 }
 
-.action {
+.Action {
   display: flex;
   width: 12px;
   padding: 15px;
@@ -29,7 +29,7 @@
   }
 }
 
-.action svg {
+.Action svg {
   flex: 0 0 auto;
   margin: auto;
   height: 100%;
@@ -37,12 +37,12 @@
   fill: #919eab;
 }
 
-.action:focus-visible {
+.Action:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0),
     0 0px 0px 2px var(--focused-outline-color);
 }
 
-.action:active svg {
+.Action:active svg {
   background-color: var(--background, rgba(0, 0, 0, 0.05));
 }

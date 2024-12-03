@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal, unstable_batchedUpdates } from "react-dom";
 import {
   CancelDrop,
   closestCenter,
@@ -6,17 +7,20 @@ import {
   rectIntersection,
   CollisionDetection,
   DndContext,
+  DragOverlay,
+  DropAnimation,
   getFirstCollision,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
   Modifiers,
+  useDroppable,
   UniqueIdentifier,
   useSensors,
   useSensor,
   MeasuringStrategy,
   KeyboardCoordinateGetter,
-  DragOverlay
+  defaultDropAnimationSideEffects
 } from "@dnd-kit/core";
 import {
   AnimateLayoutChanges,
@@ -25,7 +29,8 @@ import {
   arrayMove,
   defaultAnimateLayoutChanges,
   verticalListSortingStrategy,
-  SortingStrategy
+  SortingStrategy,
+  horizontalListSortingStrategy
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { coordinateGetter as multipleContainersCoordinateGetter } from "../Utilities/multipleContainersKeyboardCoordinates";
@@ -35,26 +40,30 @@ import { Container } from "../Components/Container";
 import type { ContainerProps } from "../Components/Container";
 
 import { createRange } from "../Utilities/createRange";
-import { createPortal } from "react-dom";
 
 const animateLayoutChanges: AnimateLayoutChanges = (args) =>
   defaultAnimateLayoutChanges({ ...args, wasDragging: true });
 
 function DroppableContainer({
   children,
+  columns = 1,
+  disabled,
   id,
   items,
   style,
   ...props
 }: ContainerProps & {
+  disabled?: boolean;
   id: UniqueIdentifier;
   items: UniqueIdentifier[];
   style?: React.CSSProperties;
 }) {
   const {
+    active,
     attributes,
     isDragging,
     listeners,
+    over,
     setNodeRef,
     transition,
     transform
@@ -66,20 +75,26 @@ function DroppableContainer({
     },
     animateLayoutChanges
   });
+  const isOverContainer = over
+    ? (id === over.id && active?.data.current?.type !== "container") ||
+      items.includes(over.id)
+    : false;
 
   return (
     <Container
-      ref={setNodeRef}
+      ref={disabled ? undefined : setNodeRef}
       style={{
         ...style,
         transition,
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.5 : undefined
       }}
+      hover={isOverContainer}
       handleProps={{
         ...attributes,
         ...listeners
       }}
+      columns={columns}
       {...props}
     >
       {children}
@@ -87,11 +102,22 @@ function DroppableContainer({
   );
 }
 
+const dropAnimation: DropAnimation = {
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: "0.5"
+      }
+    }
+  })
+};
+
 type Items = Record<UniqueIdentifier, UniqueIdentifier[]>;
 
 interface Props {
   adjustScale?: boolean;
   cancelDrop?: CancelDrop;
+  columns?: number;
   containerStyle?: React.CSSProperties;
   coordinateGetter?: KeyboardCoordinateGetter;
   getItemStyles?(args: {
@@ -106,18 +132,68 @@ interface Props {
   wrapperStyle?(args: { index: number }): React.CSSProperties;
   itemCount?: number;
   items?: Items;
+  handle?: boolean;
   renderItem?: any;
   strategy?: SortingStrategy;
   modifiers?: Modifiers;
+  minimal?: boolean;
   trashable?: boolean;
   scrollable?: boolean;
   vertical?: boolean;
+}
+
+export const TRASH_ID = "void";
+const PLACEHOLDER_ID = "placeholder";
+const empty: UniqueIdentifier[] = [];
+
+function getColor(id: UniqueIdentifier) {
+  switch (String(id)[0]) {
+    case "A":
+      return "#7193f1";
+    case "B":
+      return "#ffda6c";
+    case "C":
+      return "#00bcd4";
+    case "D":
+      return "#ef769f";
+  }
+
+  return undefined;
+}
+
+function Trash({ id }: { id: UniqueIdentifier }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "fixed",
+        left: "50%",
+        marginLeft: -150,
+        bottom: 20,
+        width: 300,
+        height: 60,
+        borderRadius: 5,
+        border: "1px solid",
+        borderColor: isOver ? "red" : "#DDD"
+      }}
+    >
+      Drop here to delete
+    </div>
+  );
 }
 
 interface SortableItemProps {
   containerId: UniqueIdentifier;
   id: UniqueIdentifier;
   index: number;
+  handle: boolean;
   disabled?: boolean;
   style(args: any): React.CSSProperties;
   getIndex(id: UniqueIdentifier): number;
@@ -129,6 +205,7 @@ function SortableItem({
   disabled,
   id,
   index,
+  handle,
   renderItem,
   style,
   containerId,
@@ -165,11 +242,12 @@ function SortableItem({
 
   return (
     <Item
-      ref={setNodeRef}
+      ref={disabled ? undefined : setNodeRef}
       value={id}
       dragging={isDragging}
       sorting={isSorting}
-      handleProps={{ ref: setActivatorNodeRef }}
+      handle={handle}
+      handleProps={handle ? { ref: setActivatorNodeRef } : undefined}
       index={index}
       wrapperStyle={wrapperStyle({ index })}
       style={style({
@@ -180,6 +258,7 @@ function SortableItem({
         overIndex: over ? getIndex(over.id) : overIndex,
         containerId
       })}
+      color={getColor(id)}
       transition={transition}
       transform={transform}
       fadeIn={mountedWhileDragging}
@@ -193,14 +272,19 @@ export const MultipleContainers = ({
   adjustScale = false,
   itemCount = 3,
   cancelDrop,
+  columns,
+  handle = false,
   items: initialItems,
   containerStyle,
   coordinateGetter = multipleContainersCoordinateGetter,
   getItemStyles = () => ({}),
   wrapperStyle = () => ({}),
+  minimal = false,
   modifiers,
   renderItem,
   strategy = verticalListSortingStrategy,
+  trashable = false,
+  vertical = false,
   scrollable
 }: Props) => {
   const [items, setItems] = useState<Items>(
@@ -208,7 +292,8 @@ export const MultipleContainers = ({
       initialItems ?? {
         A: createRange(itemCount, (index) => `A${index + 1}`),
         B: createRange(itemCount, (index) => `B${index + 1}`),
-        C: createRange(itemCount, (index) => `C${index + 1}`)
+        C: createRange(itemCount, (index) => `C${index + 1}`),
+        D: createRange(itemCount, (index) => `D${index + 1}`)
       }
   );
   const [containers, setContainers] = useState(
@@ -217,6 +302,7 @@ export const MultipleContainers = ({
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
+  const isSortingContainer = activeId ? containers.includes(activeId) : false;
 
   /**
    * Custom collision detection strategy optimized for multiple containers
@@ -247,6 +333,12 @@ export const MultipleContainers = ({
       let overId = getFirstCollision(intersections, "id");
 
       if (overId != null) {
+        if (overId === TRASH_ID) {
+          // If the intersecting droppable is the trash, return early
+          // Remove this if you're not using trashable functionality in your app
+          return intersections;
+        }
+
         if (overId in items) {
           const containerItems = items[overId];
 
@@ -327,17 +419,11 @@ export const MultipleContainers = ({
     });
   }, [items]);
 
-  function handleRemove(containerID: UniqueIdentifier) {
-    setContainers((containers) =>
-      containers.filter((id) => id !== containerID)
-    );
-  }
-
-  // Used to proper render an item when dragging it from one container to the next
   function renderSortableItemDragOverlay(id: UniqueIdentifier) {
     return (
       <Item
         value={id}
+        handle={handle}
         style={getItemStyles({
           containerId: findContainer(id) as UniqueIdentifier,
           overIndex: -1,
@@ -347,6 +433,7 @@ export const MultipleContainers = ({
           isDragging: true,
           isDragOverlay: true
         })}
+        color={getColor(id)}
         wrapperStyle={wrapperStyle({ index: 0 })}
         renderItem={renderItem}
         dragOverlay
@@ -357,16 +444,19 @@ export const MultipleContainers = ({
   function renderContainerDragOverlay(containerId: UniqueIdentifier) {
     return (
       <Container
-        label={`Container ${containerId}`}
+        label={`Column ${containerId}`}
+        columns={columns}
         style={{
           height: "100%"
         }}
         shadow
+        unstyled={false}
       >
         {items[containerId].map((item, index) => (
           <Item
             key={item}
             value={item}
+            handle={handle}
             style={getItemStyles({
               containerId,
               overIndex: -1,
@@ -376,12 +466,38 @@ export const MultipleContainers = ({
               isSorting: false,
               isDragOverlay: false
             })}
+            color={getColor(item)}
             wrapperStyle={wrapperStyle({ index })}
             renderItem={renderItem}
           />
         ))}
       </Container>
     );
+  }
+
+  function handleRemove(containerID: UniqueIdentifier) {
+    setContainers((containers) =>
+      containers.filter((id) => id !== containerID)
+    );
+  }
+
+  function getNextContainerId() {
+    const containerIds = Object.keys(items);
+    const lastContainerId = containerIds[containerIds.length - 1];
+
+    return String.fromCharCode(lastContainerId.charCodeAt(0) + 1);
+  }
+
+  function handleAddColumn() {
+    const newContainerId = getNextContainerId();
+
+    unstable_batchedUpdates(() => {
+      setContainers((containers) => [...containers, newContainerId]);
+      setItems((items) => ({
+        ...items,
+        [newContainerId]: []
+      }));
+    });
   }
 
   return (
@@ -400,7 +516,7 @@ export const MultipleContainers = ({
       onDragOver={({ active, over }) => {
         const overId = over?.id;
 
-        if (overId == null || active.id in items) {
+        if (overId == null || overId === TRASH_ID || active.id in items) {
           return;
         }
 
@@ -478,6 +594,34 @@ export const MultipleContainers = ({
           return;
         }
 
+        if (overId === TRASH_ID) {
+          setItems((items) => ({
+            ...items,
+            [activeContainer]: items[activeContainer].filter(
+              (id) => id !== activeId
+            )
+          }));
+          setActiveId(null);
+          return;
+        }
+
+        if (overId === PLACEHOLDER_ID) {
+          const newContainerId = getNextContainerId();
+
+          unstable_batchedUpdates(() => {
+            setContainers((containers) => [...containers, newContainerId]);
+            setItems((items) => ({
+              ...items,
+              [activeContainer]: items[activeContainer].filter(
+                (id) => id !== activeId
+              ),
+              [newContainerId]: [active.id]
+            }));
+            setActiveId(null);
+          });
+          return;
+        }
+
         const overContainer = findContainer(overId);
 
         if (overContainer) {
@@ -507,26 +651,42 @@ export const MultipleContainers = ({
           display: "inline-grid",
           boxSizing: "border-box",
           padding: 20,
-          gridAutoFlow: "row"
+          gridAutoFlow: vertical ? "row" : "column"
         }}
       >
-        <SortableContext items={containers} strategy={strategy}>
+        <SortableContext
+          items={[...containers, PLACEHOLDER_ID]}
+          strategy={
+            vertical
+              ? verticalListSortingStrategy
+              : horizontalListSortingStrategy
+          }
+        >
           {containers.map((containerId) => (
             <DroppableContainer
               key={containerId}
               id={containerId}
-              label={`Container ${containerId}`}
-              items={items[containerId]}
+              label={minimal ? undefined : `Column ${containerId}`}
+              columns={columns}
+              items={[
+                ...items[containerId],
+                ...items[containerId],
+                ...items[containerId]
+              ]}
+              scrollable={scrollable}
               style={containerStyle}
+              unstyled={minimal}
               onRemove={() => handleRemove(containerId)}
             >
               <SortableContext items={items[containerId]} strategy={strategy}>
                 {items[containerId].map((value, index) => {
                   return (
                     <SortableItem
+                      disabled={isSortingContainer}
                       key={value}
                       id={value}
                       index={index}
+                      handle={handle}
                       style={getItemStyles}
                       wrapperStyle={wrapperStyle}
                       renderItem={renderItem}
@@ -538,11 +698,21 @@ export const MultipleContainers = ({
               </SortableContext>
             </DroppableContainer>
           ))}
+          {minimal ? undefined : (
+            <DroppableContainer
+              id={PLACEHOLDER_ID}
+              disabled={isSortingContainer}
+              items={empty}
+              onClick={handleAddColumn}
+              placeholder
+            >
+              + Add column
+            </DroppableContainer>
+          )}
         </SortableContext>
       </div>
-      {/* Used to render an item when its moved outside the container */}
       {createPortal(
-        <DragOverlay adjustScale={adjustScale}>
+        <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
           {activeId
             ? containers.includes(activeId)
               ? renderContainerDragOverlay(activeId)
@@ -551,6 +721,9 @@ export const MultipleContainers = ({
         </DragOverlay>,
         document.body
       )}
+      {trashable && activeId && !containers.includes(activeId) ? (
+        <Trash id={TRASH_ID} />
+      ) : null}
     </DndContext>
   );
 };

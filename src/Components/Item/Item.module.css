@@ -18,7 +18,7 @@
   }
 }
 
-.wrapper {
+.Wrapper {
   display: flex;
   box-sizing: border-box;
   transform: translate3d(var(--translate-x, 0), var(--translate-y, 0), 0)
@@ -27,11 +27,11 @@
   touch-action: manipulation;
 }
 
-.wrapper.fadeIn {
+.Wrapper.fadeIn {
   animation: fadeIn 500ms ease;
 }
 
-.wrapper.dragOverlay {
+.Wrapper.dragOverlay {
   --scale: 1.05;
   --box-shadow: 0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05);
@@ -41,7 +41,7 @@
   z-index: 999;
 }
 
-.item {
+.Item {
   position: relative;
   display: flex;
   flex-grow: 1;
@@ -67,35 +67,40 @@
   transition: box-shadow 200ms cubic-bezier(0.18, 0.67, 0.6, 1.22);
 }
 
-.item:focus-visible {
+.Item:focus-visible {
   box-shadow: 0 0px 4px 1px #4c9ffe,
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05);
 }
 
-.item.dragging:not(.dragOverlay) {
+.Item:not(.withHandle) {
+  touch-action: manipulation;
+  cursor: grab;
+}
+
+.Item.dragging:not(.dragOverlay) {
   opacity: var(--dragging-opacity, 0.5);
   z-index: 0;
 }
 
-.item.dragging:not(.dragOverlay):focus {
+.Item.dragging:not(.dragOverlay):focus {
   box-shadow: 0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05);
 }
 
-.item.disabled {
+.Item.disabled {
   color: #999;
   background-color: #f1f1f1;
   cursor: not-allowed;
 }
 
-.item.disabled:focus {
+.Item.disabled:focus {
   box-shadow: 0 0px 4px 1px rgba(0, 0, 0, 0.1),
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05),
     0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05);
 }
 
-.item.dragOverlay {
+.Item.dragOverlay {
   cursor: inherit;
   /* box-shadow: 0 0px 6px 2px $focused-outline-color; */
   animation: pop 200ms cubic-bezier(0.18, 0.67, 0.6, 1.22);
@@ -104,23 +109,31 @@
   opacity: 1;
 }
 
-.item:hover .Remove {
+.Item.color:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  height: 100%;
+  width: 3px;
+  display: block;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  background-color: var(--color);
+}
+
+.Item:hover .Remove {
   visibility: visible;
 }
 
-.remove {
+.Remove {
   visibility: hidden;
 }
 
-.dragHandle {
+.Actions {
   display: flex;
-  margin-top: -12px;
-  margin-bottom: -15px;
-  margin-left: -12px;
-}
-
-.actions {
-  display: flex;
+  align-self: flex-start;
   margin-top: -12px;
   margin-left: auto;
   margin-bottom: -15px;

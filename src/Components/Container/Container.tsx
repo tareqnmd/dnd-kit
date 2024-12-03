@@ -8,10 +8,16 @@ import styles from "./Container.module.css";
 
 export interface Props {
   children: React.ReactNode;
+  columns?: number;
   label?: string;
   style?: React.CSSProperties;
+  horizontal?: boolean;
+  hover?: boolean;
   handleProps?: React.HTMLAttributes<any>;
+  scrollable?: boolean;
   shadow?: boolean;
+  placeholder?: boolean;
+  unstyled?: boolean;
   onClick?(): void;
   onRemove?(): void;
 }
@@ -20,12 +26,18 @@ export const Container = forwardRef<HTMLDivElement, Props>(
   (
     {
       children,
+      columns = 1,
       handleProps,
+      horizontal,
+      hover,
       onClick,
       onRemove,
       label,
+      placeholder,
       style,
+      scrollable,
       shadow,
+      unstyled,
       ...props
     }: Props,
     ref
@@ -36,23 +48,34 @@ export const Container = forwardRef<HTMLDivElement, Props>(
       <Component
         {...props}
         ref={ref}
-        style={style}
-        className={classNames(styles.container, shadow && styles.shadow)}
+        style={
+          {
+            ...style,
+            "--columns": columns
+          } as React.CSSProperties
+        }
+        className={classNames(
+          styles.Container,
+          unstyled && styles.unstyled,
+          horizontal && styles.horizontal,
+          hover && styles.hover,
+          placeholder && styles.placeholder,
+          scrollable && styles.scrollable,
+          shadow && styles.shadow
+        )}
         onClick={onClick}
         tabIndex={onClick ? 0 : undefined}
       >
         {label ? (
-          <div className={styles.header}>
-            <div className={styles.dragHandle}>
-              <Handle {...handleProps} />
-            </div>
-            <div className={styles.label}>{label}</div>
-            <div className={styles.actions}>
+          <div className={styles.Header}>
+            {label}
+            <div className={styles.Actions}>
               {onRemove ? <Remove onClick={onRemove} /> : undefined}
+              <Handle {...handleProps} />
             </div>
           </div>
         ) : null}
-        <ul>{children}</ul>
+        {placeholder ? children : <ul>{children}</ul>}
       </Component>
     );
   }

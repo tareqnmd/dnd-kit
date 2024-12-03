@@ -17,7 +17,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       <button
         ref={ref}
         {...props}
-        className={classNames(styles.action, className)}
+        className={classNames(styles.Action, className)}
         tabIndex={0}
         style={
           {

@@ -9,8 +9,10 @@ import styles from "./Item.module.css";
 
 export interface Props {
   dragOverlay?: boolean;
+  color?: string;
   disabled?: boolean;
   dragging?: boolean;
+  handle?: boolean;
   handleProps?: any;
   height?: number;
   index?: number;
@@ -22,7 +24,7 @@ export interface Props {
   transition?: string | null;
   wrapperStyle?: React.CSSProperties;
   value: React.ReactNode;
-  onRemove?: () => void;
+  onRemove?(): void;
   renderItem?(args: {
     dragOverlay: boolean;
     dragging: boolean;
@@ -42,10 +44,12 @@ export const Item = React.memo(
   React.forwardRef<HTMLLIElement, Props>(
     (
       {
+        color,
         dragOverlay,
         dragging,
         disabled,
         fadeIn,
+        handle,
         handleProps,
         height,
         index,
@@ -91,7 +95,7 @@ export const Item = React.memo(
       ) : (
         <li
           className={classNames(
-            styles.wrapper,
+            styles.Wrapper,
             fadeIn && styles.fadeIn,
             sorting && styles.sorting,
             dragOverlay && styles.dragOverlay
@@ -114,29 +118,33 @@ export const Item = React.memo(
               "--scale-y": transform?.scaleY
                 ? `${transform.scaleY}`
                 : undefined,
-              "--index": index
+              "--index": index,
+              "--color": color
             } as React.CSSProperties
           }
           ref={ref}
         >
           <div
             className={classNames(
-              styles.item,
+              styles.Item,
               dragging && styles.dragging,
+              handle && styles.withHandle,
               dragOverlay && styles.dragOverlay,
-              disabled && styles.disabled
+              disabled && styles.disabled,
+              color && styles.color
             )}
             style={style}
+            data-cypress="draggable-item"
+            {...(!handle ? listeners : undefined)}
             {...props}
+            tabIndex={!handle ? 0 : undefined}
           >
-            <div className={styles.dragHandle}>
-              <Handle {...handleProps} {...listeners} />
-            </div>
-            Item {value}
-            <span className={styles.actions}>
+            {value}
+            <span className={styles.Actions}>
               {onRemove ? (
-                <Remove className={styles.remove} onClick={onRemove} />
+                <Remove className={styles.Remove} onClick={onRemove} />
               ) : null}
+              {handle ? <Handle {...handleProps} {...listeners} /> : null}
             </span>
           </div>
         </li>
